@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+core/.env
+core/secrets.py
+core.sock
+certs
+venv
+.venv
+static/admin
+.idea
