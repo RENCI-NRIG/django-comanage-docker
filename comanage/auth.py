@@ -1,5 +1,4 @@
 import unicodedata
-
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 
 from .ldapsearch import get_ldap_attributes
@@ -75,8 +74,6 @@ class MyOIDCAB(OIDCAuthenticationBackend):
         user = super(MyOIDCAB, self).create_user(claims)
 
         print('### CREATE USER')
-        print(claims)
-
         user.first_name = claims.get('given_name', '')
         user.given_name = claims.get('given_name', '')
         user.last_name = claims.get('family_name', '')
@@ -95,7 +92,7 @@ class MyOIDCAB(OIDCAuthenticationBackend):
         user.name = claims.get('name', '')
         user.save()
 
-        ldap_attributes = get_ldap_attributes(claims.get('email', ''))
+        ldap_attributes = get_ldap_attributes(user=user)
 
         if ldap_attributes:
             check_ismemberof(ldap_attributes)
@@ -108,8 +105,6 @@ class MyOIDCAB(OIDCAuthenticationBackend):
     def update_user(self, user, claims):
 
         print('### UPDATE USER')
-        print(claims)
-
         user.first_name = claims.get('given_name', '')
         user.given_name = claims.get('given_name', '')
         user.last_name = claims.get('family_name', '')
@@ -128,7 +123,7 @@ class MyOIDCAB(OIDCAuthenticationBackend):
         user.name = claims.get('name', '')
         user.save()
 
-        ldap_attributes = get_ldap_attributes(claims.get('email', ''))
+        ldap_attributes = get_ldap_attributes(user=user)
 
         if ldap_attributes:
             check_ismemberof(ldap_attributes)

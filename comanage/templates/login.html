@@ -3,12 +3,12 @@
 {% block title %}Login{% endblock %}
 
 {% block content %}
-    <h2>Login</h2>
     <html>
     <body>
     {% if user.is_authenticated %}
-        <h2>Current User:</h2>
-        <table border="1px solid black" cellpadding="5px">
+        <h2>Your information:</h2>
+        <h3>CILogon Authentication Claims</h3>
+        <table border="1px solid black" cellpadding="5px" width="100%">
             <tr>
                 <td>name</td>
                 <td><b>{{ user.name }}</b></td>
@@ -70,38 +70,52 @@
                 <td><b>{{ user.affiliation }}</b></td>
             </tr>
         </table>
+        {% if isMemberOf %}
+            <h3>COManage Authorization: isMemberOf</h3>
+            <table border="1px solid black" cellpadding="5px" width="100%">
+                {% for group in isMemberOf %}
+                    <tr>
+                        <td>{{ group.attribute }}</td>
+                        <td><b>{{ group.value }}</b></td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% endif %}
+        {% if LDAPOther %}
+            <h3>COManage Authorization: other attributes</h3>
+            <table border="1px solid black" cellpadding="5px" width="100%">
+                {% for group in LDAPOther %}
+                    <tr>
+                        <td>{{ group.attribute }}</td>
+                        <td><b>{{ group.value }}</b></td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% endif %}
         <br>
-        <form action="/" method="post">
-            {% csrf_token %}
-            <input type="hidden" name="user_id" value="{{ user.id }}">
-            <input type="submit" value="See attributes from LDAP">
-            <br>
-            {% if isMemberOf %}
-                <h2>LDAP: isMemberOf</h2>
-                <table border="1px solid black" cellpadding="5px">
-                    {% for group in isMemberOf %}
-                        <tr>
-                            <td>{{ group.attribute }}</td>
-                            <td><b>{{ group.value }}</b></td>
-                        </tr>
-                    {% endfor %}
-                </table>
-            {% endif %}
-            {% if LDAPOther %}
-                <h2>LDAP: other attributes</h2>
-                <table border="1px solid black" cellpadding="5px">
-                    {% for group in LDAPOther %}
-                        <tr>
-                            <td>{{ group.attribute }}</td>
-                            <td><b>{{ group.value }}</b></td>
-                        </tr>
-                    {% endfor %}
-                </table>
-            {% endif %}
-        </form>
-        <p><a href="{% url 'logout' %}">logout</a></p>
+        <a href="{% url 'logout' %}">
+            <button type="button">
+                Logout
+            </button>
+        </a>
     {% else %}
-        <a href="{% url 'oidc_authentication_init' %}">Login</a>
+        <h2>Authenticate with:</h2>
+
+        <div style="border: 5px outset #696; cursor:pointer; padding:3px;
+display:inline-block;" onclick="location.href='https://cilogon.org'">
+            <button type="button">
+                <a href="{% url 'oidc_authentication_init' %}"
+                   style="font-family:Arial,sans-serif; font-style:italic;
+font-weight:bold; font-size:28px; color:#363;
+text-decoration:none;">
+                    <img alt=""
+                         src="https://cilogon.org/images/cilogon-logo-32x32.png"
+                         style="vertical-align:middle"/>
+                    CILogon 2.0 / COmanage
+                </a>
+            </button>
+        </div>
+
     {% endif %}
     </body>
     </html>

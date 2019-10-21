@@ -1,10 +1,10 @@
-# Django COmanage (CILogon 2.0) in Docker
+# Django / COmanage (CILogon 2.0) in Docker
 
 Using Django, a high-level Python Web framework that encourages rapid development and clean, pragmatic design, demonstrate custom user authentication and authorization via COmanage (CILogon 2.0) services.
 
 The example provided herein is specific to running a demonstration server on your local machine at [https://127.0.0.1:8443/](https://127.0.0.1:8443/). This could however be generalized to any host provided that you have.
 
-- Registered a COmanage OIDC client
+- Registered a COmanage OIDC client (Through CILogon)
 - Have valid user credentials for the COmanage LDAP server
 - Are using a fully qualified domain name or IP
 - Have valid SSL certificates (CA or self generated)
@@ -22,97 +22,35 @@ The example provided herein is specific to running a demonstration server on you
 
 I just want to run everything in Docker and don't care for an explanation
 
-1. Create a `core/secrets.py` file (use `dummy.secrets.py` as an example)
-
-    ```python
-    # SECURITY WARNING: keep the secret key used in production secret!
-    SECRET_KEY = 'xxxxxxxxxxxxxxxxxx'  # generate a secret key
-    ```
-
-2. Create a `core/.env` file (use `dummy.env` as an example)
-
-    ```ini
-    # debug
-    export DEBUG=true                 # set to false in production
-    
-    # database PostgreSQL
-    export POSTGRES_PASSWORD=postgres
-    export POSTGRES_USER=postgres
-    export PGDATA=/var/lib/postgresql/data
-    export POSTGRES_DB=postgres
-    export POSTGRES_HOST=database
-    export POSTGRES_PORT=5432
-    
-    # CILogon / COmanage
-    export OIDC_RP_CLIENT_ID = ''      # value provided when OIDC client is created
-    export OIDC_RP_CLIENT_SECRET = ''  # value provided when OIDC client is created
-    
-    # LDAP
-    export LDAP_HOST = ''              # value provided by CILogon staff
-    export LDAP_USER = ''              # value provided by CILogon staff
-    export LDAP_PASSWORD = ''          # value provided by CILogon staff
-    export LDAP_SEARCH_BASE = ''       # value provided by CILogon staff
-    ```
-3. Update the `nginx` section of the `docker-compose.yml` file
-
-    ```
-    ...
-      nginx:
-        image: nginx:latest
-        container_name: nginx
-        ports:
-          - 8080:80                    # change http port as needed
-          - 8443:443                   # change https port as needed
-        volumes:
-          - .:/code
-          - ./static:/code/static
-          - ./media:/code/media
-          - ./nginx/core_nginx_ssl.conf:/etc/nginx/conf.d/default.conf # use SSL config
-          - /LOCAL_PATH_TO/your-ssl.crt:/etc/ssl/SSL.crt               # path to your SSL cert
-          - /LOCAL_PATH_TO/your-ssl.key:/etc/ssl/SSL.key               # path to your SSL key
-    ```
-    If you don't have a valid SSL certificate pair, you can generate a self-signed pair using the `generate-certificates.sh` script
-
-    ```console
-    $ ./generate-certificates.sh
-    Generating a 4096 bit RSA private key
-    ...
-    $ tree ./certs
-    ./certs
-    ├── self.signed.crt
-    └── self.signed.key
-    ```
-4. Run `docker-compose up -d`
-
-    ```console
-    $ docker-compose up -d
-    Creating database ... done
-    Creating django   ... done
-    Creating nginx    ... done
-    ```
+1. `cp core/secrets.py.template core/secrets.py` 
+    - Modify `SECRET_KEY` to be [Django compliant](https://djecrety.ir)
+2. `cp core/env.template core/.env` 
+    - Update OIDC and LDAP settings per your CILogon/COmanage OIDC Client
+3. `cp env.template .env` 
+    - Update environment settings for use by docker-compose
+4. `cp nginx/default.conf.template nginx/default.conf` 
+    - Update Nginx configuration as needed by your deployment
+5. Use your own certs, or generate self-signed certs with `./generate-certificates.sh` and validate Nginx cert configs in `.env`
+5. Run `docker-compose up -d`
 
     After a few moments the docker containers will have stood up and configured themselves. 
-Naviage to [https://127.0.0.1:8443/](https://127.0.0.1:8443/) (or whatever you've configured your host to be).
+Navigate to [https://127.0.0.1:8443/](https://127.0.0.1:8443/) (or whatever you've configured your host to be).
 
 You should now observe a simple login page (click the [Login]() link)
 
-<img width="80%" alt="login" src="https://user-images.githubusercontent.com/5332509/44950212-0ae09400-ae10-11e8-81dd-bc7977a3e453.png">
+![Login](https://user-images.githubusercontent.com/5332509/67232857-2fcb0880-f410-11e9-9c05-4d5a6cefba5d.png)
 
 Choose the identity provider that you had registered in your COmanage OIDC client
 
-<img width="80%" alt="CILogon IDp" src="https://user-images.githubusercontent.com/5332509/44950213-0ae09400-ae10-11e8-8a5a-90787668e799.png">
+![CILogon IDp](https://user-images.githubusercontent.com/5332509/67232858-2fcb0880-f410-11e9-9ed5-77fa87db9dc6.png)
 
 Example using UNC Chapel Hill
 
-<img width="80%" alt="UNC SSO" src="https://user-images.githubusercontent.com/5332509/44950214-0ae09400-ae10-11e8-93cc-79ce51182895.png">
+![UNC SSO](https://user-images.githubusercontent.com/5332509/67232861-30639f00-f410-11e9-9448-f4d371685183.png)
 
-On successful login your `OIDC_CLAIMS` will be displayed
+On successful login your **CILogon Authenticatin Claims** will be displayed along with any **COmanage Authorizations** if you have them
 
-<img width="80%" alt="OIDC Claims" src="https://user-images.githubusercontent.com/5332509/44950215-0ae09400-ae10-11e8-92b1-db27020f9497.png">
-
-Optionally you can view your LDAP attributes. The `isMemberOf` attributes can be used for group based authorization.
-
-<img width="80%" alt="LDAP attributes" src="https://user-images.githubusercontent.com/5332509/44950216-0ae09400-ae10-11e8-9746-82db6b2a7ac9.png">
+![Claims and LDAP attributes](https://user-images.githubusercontent.com/5332509/67232863-30639f00-f410-11e9-86f1-9f10ac42e159.png)
 
 ## <a name="about"></a>About
 
@@ -163,18 +101,24 @@ This repository is designed to be run in Docker out of the box using docker-comp
     chmod-socket        = 666
     ...
     ```
-1. Create a `core/secrets.py` file (use `dummy.secrets.py` as an example)
+2. `cp core/secrets.py.template core/secrets.py` - Modify `SECRET_KEY` to be [Django compliant](https://djecrety.ir).
 
     ```python
     # SECURITY WARNING: keep the secret key used in production secret!
-    SECRET_KEY = 'xxxxxxxxxxxxxxxxxx'  # generate a secret key
+    SECRET_KEY = '*42qm9%961hnj_hl7sk-u36r*wgp)fas&hx0+p#^0x5!=75n@q'  # generate a secret key
     ```
 
-2. Create a `core/.env` file (use `dummy.env` as an example)
+3. `cp core/env.template core/.env` - Update OIDC and LDAP settings per your OIDC Client
 
-    ```ini
-    # debug
-    export DEBUG=false                 # set to false in production
+    ```env
+    # Settings for environment. Notes:
+    #
+    #  - Since these are bash-like settings, there should be no space between the
+    #    variable name and the value (ie, "A=B", not "A = B")
+    #  - Boolean values should be all lowercase (ie, "A=false", not "A=False")
+    
+    # debug - set to false in production
+    export DEBUG=true
     
     # database PostgreSQL
     export POSTGRES_PASSWORD=postgres
@@ -184,35 +128,50 @@ This repository is designed to be run in Docker out of the box using docker-comp
     export POSTGRES_HOST=database
     export POSTGRES_PORT=5432
     
-    # CILogon / COmanage
-    export OIDC_RP_CLIENT_ID = ''      # value provided when OIDC client is created
-    export OIDC_RP_CLIENT_SECRET = ''  # value provided when OIDC client is created
+    # OIDC CILogon / COmanage - values provided when OIDC client is created
+    export OIDC_RP_CLIENT_ID=''
+    export OIDC_RP_CLIENT_SECRET=''
+    export OIDC_RP_CALLBACK=''
     
-    # LDAP
-    export LDAP_HOST = ''              # value provided by CILogon staff
-    export LDAP_USER = ''              # value provided by CILogon staff
-    export LDAP_PASSWORD = ''          # value provided by CILogon staff
-    export LDAP_SEARCH_BASE = ''       # value provided by CILogon staff
+    # LDAP - values provided by CILogon staff
+    export LDAP_HOST=''
+    export LDAP_PASSWORD=''
+    export LDAP_SEARCH_BASE=''
+    export LDAP_USER=''
     ```
-3. Update the `nginx` section of the `docker-compose.yml` file
+    
+4. `cp env.template .env` - Update environment settings for use by docker-compose
 
+    ```env
+    # docker-compose environment file
+    #
+    # When you set the same environment variable in multiple files,
+    # here’s the priority used by Compose to choose which value to use:
+    #
+    #  1. Compose file
+    #  2. Shell environment variables
+    #  3. Environment file
+    #  4. Dockerfile
+    #  5. Variable is not defined
+    
+    # Nginx configuration
+    NGINX_DEFAULT_CONF=./nginx/default.conf
+    NGINX_SSL_CERT=./certs/self.signed.crt
+    NGINX_SSL_KEY=./certs/self.signed.key
+    
+    # PostgreSQL database - default values should not be used in production
+    PGDATA=/var/lib/postgresql/data
+    POSTGRES_DB=postgres
+    POSTGRES_PASSWORD=postgres
+    POSTGRES_PORT=5432
+    POSTGRES_USER=postgres
+    
+    # uWSGI services in Django
+    UWSGI_GID=1000
+    UWSGI_UID=1000
     ```
-    ...
-      nginx:
-        image: nginx:latest
-        container_name: nginx
-        ports:
-          - 8080:80                    # change http port as needed
-          - 8443:443                   # change https port as needed
-        volumes:
-          - .:/code
-          - ./static:/code/static
-          - ./media:/code/media
-          - ./nginx/core_nginx_ssl.conf:/etc/nginx/conf.d/default.conf # use SSL config
-          - /LOCAL_PATH_TO/your-ssl.crt:/etc/ssl/SSL.crt               # path to your SSL cert
-          - /LOCAL_PATH_TO/your-ssl.key:/etc/ssl/SSL.key               # path to your SSL key
-    ```
-    If you don't have a valid SSL certificate pair, you can generate a self-signed pair using the `generate-certificates.sh` script
+    
+    **NOTE**: If you don't have a valid SSL certificate pair, you can generate a self-signed pair using the `generate-certificates.sh` script
 
     ```console
     $ ./generate-certificates.sh
@@ -223,7 +182,11 @@ This repository is designed to be run in Docker out of the box using docker-comp
     ├── self.signed.crt
     └── self.signed.key
     ```
-4. Run `docker-compose up -d`
+
+
+5. `cp nginx/default.conf.template nginx/default.conf` - Update Nginx configuration as needed by your deployment
+    
+6. Run `docker-compose up -d`
 
     ```console
     $ docker-compose up -d
@@ -248,13 +211,12 @@ Create the virtual environment and install packages
 ```
 $ virtualenv -p $(which python3) venv
 $ source venv/bin/activate
-(venv)$ pip install --upgrade pip
 (venv)$ pip install -r requirements.txt
 ```
 
 Start the pre-defined PostgreSQL database in Docker
 
-- Update `POSTGRES_HOST` in `.env` to reflect the IP of your local machine (For example, from `export POSTGRES_HOST=database` to  `export POSTGRES_HOST=127.0.0.1`)
+- Update `POSTGRES_HOST` in `core/.env` to reflect the IP of your local machine (For example, from `export POSTGRES_HOST=database` to  `export POSTGRES_HOST=127.0.0.1`)
 - Ensure the `POSTGRES_PORT=5432` is properly mapped to the host in the `docker-compose.yml` file
 
 ```
@@ -292,36 +254,19 @@ socket              = :8000
 ...
 ```
 
-Update the nginx configuration file (http or https)
+Update the `nginx/default.conf` file
 
 ```conf
 upstream django {
-    #server unix:///code/${PROJECT_NAME}.sock; # UNIX file socket
+    #server unix:///code/base.sock; # UNIX file socket
     # Defaulting to macOS equivalent of docker0 network for TCP socket
-    server docker.for.mac.localhost:8000; # TCP socket
+    server host.docker.internal:8000; # TCP socket
 }
 ```
 
-- **NOTE**: `docker.for.mac.localhost` is macOS specific, substitute as required for your operating system
+- **NOTE**: `host.docker.internal` is macOS specific, substitute as required for your operating system
 
-Update the `nginx` section of the `docker-compose.yml` file
 
-```yaml
-...
-  nginx:
-    image: nginx:latest
-    container_name: nginx
-    ports:
-      - 8080:80                    # change http port as needed
-      - 8443:443                   # change https port as needed
-    volumes:
-      - .:/code
-      - ./static:/code/static
-      - ./media:/code/media
-      - ./nginx/core_nginx_ssl.conf:/etc/nginx/conf.d/default.conf # use SSL config
-      - /LOCAL_PATH_TO/your-ssl.crt:/etc/ssl/SSL.crt               # path to your SSL cert
-      - /LOCAL_PATH_TO/your-ssl.key:/etc/ssl/SSL.key               # path to your SSL key
-```
 If you don't have a valid SSL certificate pair, you can generate a self-signed pair using the `generate-certificates.sh` script
 
 ```console
@@ -334,10 +279,31 @@ $ tree ./certs
 └── self.signed.key
 ```
 
+Otherwise update `nginx` section in the `.env` file to match your SSL certificate placement from the host
+
+```env
+...
+# Nginx configuration
+NGINX_DEFAULT_CONF=./nginx/default.conf
+NGINX_SSL_CERT=./certs/self.signed.crt
+NGINX_SSL_KEY=./certs/self.signed.key
+...
+``` 
+
 Launch the `nginx` container
 
 ```
 $ docker-compose up -d nginx
+```
+
+At this point two containers should be running on the system
+
+```
+$ docker-compose ps
+  Name                Command              State                      Ports
+----------------------------------------------------------------------------------------------
+database   docker-entrypoint.sh postgres   Up      0.0.0.0:5432->5432/tcp
+nginx      nginx -g daemon off;            Up      0.0.0.0:8443->443/tcp, 0.0.0.0:8080->80/tcp
 ```
 
 Execute the `run_uwsgi.sh` script
@@ -349,7 +315,7 @@ Execute the `run_uwsgi.sh` script
 - **NOTE**: the `uwsgi` service will be spawned using the user's **UID** and **GID** values. These would otherwise default to `UID=1000` and `GID=1000` as denoted in the `run_uwsgi.sh` script.
 
 After a few moments the docker containers will have stood up and configured themselves. 
-Naviage to [https://127.0.0.1:8443/](https://127.0.0.1:8443/)
+Navigate to [https://127.0.0.1:8443/](https://127.0.0.1:8443/)
 
 ## <a name="oidc"></a>OIDC COmanage client configuration
 
@@ -540,6 +506,4 @@ Django templates example:
 
 - Readthedocs: [https://ldap3.readthedocs.io](https://ldap3.readthedocs.io)
 - Github: [https://github.com/cannatag/ldap3](https://github.com/cannatag/ldap3)
-
-
 
