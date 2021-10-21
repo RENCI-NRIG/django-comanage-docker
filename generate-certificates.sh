@@ -3,16 +3,18 @@
 ROOT_DIR=$(pwd)
 
 if [ ! -d $ROOT_DIR/certs ]; then
-  mkdir -p $ROOT_DIR/certs
+    mkdir -p $ROOT_DIR/certs
 else
-  rm -f $ROOT_DIR/certs/*
+    rm -f $ROOT_DIR/certs/*
 fi
 
 cd $ROOT_DIR/certs
-openssl req -newkey rsa:4096 -days 365 -nodes -x509 \
-  -subj "/C=US/ST=North Carolina/L=Chapel Hill/O=Local/OU=Development/CN=local.dev/emailAddress=email@local.dev" \
-  -keyout self.signed.key \
-  -out self.signed.crt
+openssl req -x509 -outform pem -out chain.pem -keyout privkey.pem \
+    -newkey rsa:4096 -nodes -sha256 -days 3650 \
+    -subj '/CN=localhost' -extensions EXT -config <(
+        printf "[dn]\nCN=localhost\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:localhost\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth"
+    )
+cat chain.pem >fullchain.pem
 cd -
 
-exit 0;
+exit 0

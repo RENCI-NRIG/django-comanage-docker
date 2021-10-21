@@ -31,7 +31,13 @@ I just want to run everything in Docker and don't care for an explanation
 4. `cp nginx/default.conf.template nginx/default.conf` 
     - Update Nginx configuration as needed by your deployment
 5. Use your own certs, or generate self-signed certs with `./generate-certificates.sh` and validate Nginx cert configs in `.env`
-5. Run `docker-compose up -d`
+5. Run 
+
+    ```console
+docker-compose pull
+docker-compose build
+docker-compose up -d
+```
 
     After a few moments the docker containers will have stood up and configured themselves. 
 Navigate to [https://127.0.0.1:8443/](https://127.0.0.1:8443/) (or whatever you've configured your host to be).

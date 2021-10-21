@@ -1,3 +1,4 @@
+import os
 import unicodedata
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 
@@ -92,13 +93,13 @@ class MyOIDCAB(OIDCAuthenticationBackend):
         user.name = claims.get('name', '')
         user.save()
 
-        ldap_attributes = get_ldap_attributes(user=user)
-
-        if ldap_attributes:
-            check_ismemberof(ldap_attributes)
-            update_membership_ismemberof(user, ldap_attributes)
-            check_ldapother_attributes(ldap_attributes)
-            update_ldapother_ismemberof(user, ldap_attributes)
+        if os.getenv('LDAP_HOST', None):
+            ldap_attributes = get_ldap_attributes(user=user)
+            if ldap_attributes:
+                check_ismemberof(ldap_attributes)
+                update_membership_ismemberof(user, ldap_attributes)
+                check_ldapother_attributes(ldap_attributes)
+                update_ldapother_ismemberof(user, ldap_attributes)
 
         return user
 
@@ -123,12 +124,12 @@ class MyOIDCAB(OIDCAuthenticationBackend):
         user.name = claims.get('name', '')
         user.save()
 
-        ldap_attributes = get_ldap_attributes(user=user)
-
-        if ldap_attributes:
-            check_ismemberof(ldap_attributes)
-            update_membership_ismemberof(user, ldap_attributes)
-            check_ldapother_attributes(ldap_attributes)
-            update_ldapother_ismemberof(user, ldap_attributes)
+        if os.getenv('LDAP_HOST', None):
+            ldap_attributes = get_ldap_attributes(user=user)
+            if ldap_attributes:
+                check_ismemberof(ldap_attributes)
+                update_membership_ismemberof(user, ldap_attributes)
+                check_ldapother_attributes(ldap_attributes)
+                update_ldapother_ismemberof(user, ldap_attributes)
 
         return user
