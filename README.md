@@ -31,13 +31,13 @@ I just want to run everything in Docker and don't care for an explanation
 4. `cp nginx/default.conf.template nginx/default.conf` 
     - Update Nginx configuration as needed by your deployment
 5. Use your own certs, or generate self-signed certs with `./generate-certificates.sh` and validate Nginx cert configs in `.env`
-5. Run 
+6. Run 
 
     ```console
-docker-compose pull
-docker-compose build
-docker-compose up -d
-```
+    docker-compose pull
+    docker-compose build
+    docker-compose up -d
+    ```
 
     After a few moments the docker containers will have stood up and configured themselves. 
 Navigate to [https://127.0.0.1:8443/](https://127.0.0.1:8443/) (or whatever you've configured your host to be).
@@ -74,7 +74,7 @@ Python package [ldap3](https://github.com/cannatag/ldap3) (used for retrieving L
 
 The core of this project is based on [django-startproject-docker](https://github.com/mjstealey/django-startproject-docker) which provides.
 
-- Python 3.7 based Docker definition ([python:3.7](https://hub.docker.com/_/python/))
+- Python 3 based Docker definition ([python:3](https://hub.docker.com/_/python/))
 - Virtual environment managed by virtualenv ([virtualenv tool](https://virtualenv.pypa.io/en/stable/))
 - PostgreSQL database backend adapter ([psycopg2-binary](https://pypi.org/project/psycopg2-binary/))
 - uWSGI based run scripts ([uWGSI](https://pypi.org/project/uWSGI/))
@@ -92,20 +92,23 @@ This repository is designed to be run in Docker out of the box using docker-comp
 
 ### Run everything in Docker
 
-1. Validate `uwsgi-socket` settings in the `core_uwsgi.ini` file
+1. Validate `uwsgi-socket` settings in the `uwsgi.ini` file
 
     ```ini
-    ...
-    ; add an http router/server on the specified address **port**
-    ;http                = :8000
-    ; map mountpoint to static directory (or file) **port**
-    ;static-map          = /static/=static/
-    ;static-map          = /media/=media/
-    ; bind to the specified UNIX/TCP socket using uwsgi protocol (full path) **socket**
-    uwsgi-socket        = ./core.sock
-    ; ... with appropriate permissions - may be needed **socket**
-    chmod-socket        = 666
-    ...
+    [uwsgi]
+    chdir = ./
+    module = core.wsgi:application
+    master = True
+    pidfile = /tmp/project-master.pid
+    vacuum = True
+    max-requests = 5000
+
+    # use for development
+    ;socket = :8000
+
+    # use for production
+    uwsgi-socket = ./base.sock
+    chmod-socket = 666
     ```
 2. `cp core/secrets.py.template core/secrets.py` - Modify `SECRET_KEY` to be [Django compliant](https://djecrety.ir).
 
@@ -162,8 +165,7 @@ This repository is designed to be run in Docker out of the box using docker-comp
     
     # Nginx configuration
     NGINX_DEFAULT_CONF=./nginx/default.conf
-    NGINX_SSL_CERT=./certs/self.signed.crt
-    NGINX_SSL_KEY=./certs/self.signed.key
+    NGINX_SSL_CERTS_DIR=./certs
     
     # PostgreSQL database - default values should not be used in production
     PGDATA=/var/lib/postgresql/data
@@ -183,10 +185,11 @@ This repository is designed to be run in Docker out of the box using docker-comp
     $ ./generate-certificates.sh
     Generating a 4096 bit RSA private key
     ...
-    $ tree ./certs
-    ./certs
-    ├── self.signed.crt
-    └── self.signed.key
+    $ tree certs
+    certs
+    ├── chain.pem
+    ├── fullchain.pem
+    └── privkey.pem
     ```
 
 
@@ -242,21 +245,23 @@ database   docker-entrypoint.sh postgres   Up      0.0.0.0:5432->5432/tcp
 
 **NOTE**: Depending on your system (macOS) you may not be able to run the Nginx server using socket files mounted from the host. For more information refer to this Github issue: [Support for sharing unix sockets](https://github.com/docker/for-mac/issues/483). If this is the case, you'll either need to run your Nginx server over ports, or run everything in Docker. The following will describe how to run the Nginx server using TCP ports.
 
-Update the uWSGI ini file
+Update the `uwsgi.ini` file
 
 ```ini
-...
-; use protocol uwsgi over TCP socket (use if UNIX file socket is not an option)
-socket              = :8000
-; add an http router/server on the specified address **port**
-;http                = :8000
-; map mountpoint to static directory (or file) **port**
-;static-map          = /static/=static/
-;static-map          = /media/=media/
-; bind to the specified UNIX/TCP socket using uwsgi protocol (full path) **socket**
-;uwsgi-socket        = ./core.sock
-; ... with appropriate permissions - may be needed **socket**
-;chmod-socket        = 666
+[uwsgi]
+chdir = ./
+module = core.wsgi:application
+master = True
+pidfile = /tmp/project-master.pid
+vacuum = True
+max-requests = 5000
+
+# use for development
+socket = :8000
+
+# use for production
+;uwsgi-socket = ./base.sock
+;chmod-socket = 666
 ...
 ```
 
@@ -273,16 +278,17 @@ upstream django {
 - **NOTE**: `host.docker.internal` is macOS specific, substitute as required for your operating system
 
 
-If you don't have a valid SSL certificate pair, you can generate a self-signed pair using the `generate-certificates.sh` script
+If you don't have a valid SSL certificate, you can generate a self-signed certificate using the `generate-certificates.sh` script
 
 ```console
 $ ./generate-certificates.sh
 Generating a 4096 bit RSA private key
 ...
-$ tree ./certs
-./certs
-├── self.signed.crt
-└── self.signed.key
+$ tree certs
+certs
+├── chain.pem
+├── fullchain.pem
+└── privkey.pem
 ```
 
 Otherwise update `nginx` section in the `.env` file to match your SSL certificate placement from the host
@@ -291,8 +297,7 @@ Otherwise update `nginx` section in the `.env` file to match your SSL certificat
 ...
 # Nginx configuration
 NGINX_DEFAULT_CONF=./nginx/default.conf
-NGINX_SSL_CERT=./certs/self.signed.crt
-NGINX_SSL_KEY=./certs/self.signed.key
+NGINX_SSL_CERTS_DIR=./certs
 ...
 ``` 
 
