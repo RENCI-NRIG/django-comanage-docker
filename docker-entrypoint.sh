@@ -7,11 +7,16 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 until [ $(pg_isready -h database -q)$? -eq 0 ]; do
-  >&2 echo "Postgres is unavailable - sleeping"
-  sleep 1
+    echo >&2 "Postgres is unavailable - sleeping"
+    sleep 1
 done
 
->&2 echo "Postgres is up - continuing"
+echo >&2 "Postgres is up - continuing"
+
+if [[ ! -d "/code/sock" ]]; then
+    mkdir -p /code/sock
+fi
+chown -R ${UWSGI_UID}:${UWSGI_GID} /code/sock
 
 USE_DOT_VENV=1 ./run_uwsgi.sh
 

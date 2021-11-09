@@ -172,3 +172,6 @@ except ImportError:
     pass
 
 AUTH_USER_MODEL = 'comanage.User'  # mozilla-django-oidc custom user
+
+# account for Django 3.2 (Warning models.W042)
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
